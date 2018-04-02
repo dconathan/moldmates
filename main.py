@@ -1,17 +1,22 @@
-
-from moldmates.load import parse_raw
-from moldmates.process import process_image
-from moldmates.constants import LINES
+from moldmates.constants import LINES, ZIP
+from moldmates.load import load_image, load_zip
+from moldmates.plot import plot_images
+from moldmates.compare import compare_images, score_candidate
+from moldmates.utils import ab2rtheta
+from moldmates.objects import ChainlineGroup
+import matplotlib.pyplot as plt
 import pathlib
+import numpy as np
 
 line_files = pathlib.Path(LINES).iterdir()
 
-first = next(line_files)
-first = next(line_files)
+images = list(map(load_image, line_files))
+c1 = ChainlineGroup(images[0].chainlines[:4])
+c2 = ChainlineGroup(images[1].chainlines[:4])
 
-image = parse_raw(first)
+score_candidate(c1, c2)
 
-process_image(image)
-
-
-
+#plt.figure()
+#ax = plt.gca()
+#plot_images(images[:3], ax)
+#plt.show()

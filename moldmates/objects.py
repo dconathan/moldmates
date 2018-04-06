@@ -2,7 +2,7 @@ import numpy as np
 from dataclasses import dataclass, field, asdict
 from typing import List
 import json
-from moldmates.utils import consume, ab2rtheta
+from moldmates.utils import consume, ab2rtheta, xy2ab
 from collections import UserList
 
 
@@ -14,7 +14,7 @@ class Chainline:
     theta: float = None
 
     def process(self):
-        a, b = np.polyfit(self.xs, self.ys, 1)
+        a, b = xy2ab(self.xs, self.ys)
         self.r, self.theta = ab2rtheta(a, b)
         return self
 
@@ -50,6 +50,10 @@ class Image:
     def process(self):
         consume(map(lambda x: x.process(), self.chainlines))
         return self
+    
+    @property
+    def n_chainlines(self):
+        return len(self.chainlines) if self.chainlines else 0
         
 
 @dataclass

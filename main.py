@@ -16,7 +16,7 @@ c2 = ChainlineGroup(images[1].chainlines[:4])
 
 score_candidate(c1, c2)
 
-#plt.figure()
-#ax = plt.gca()
-#plot_images(images[:3], ax)
-#plt.show()
+plt.figure()
+ax = plt.gca()
+plot_images(images[:3], ax)
+plt.show()

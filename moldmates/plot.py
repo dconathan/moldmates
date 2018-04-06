@@ -1,5 +1,6 @@
 from typing import List
 from moldmates.objects import Chainline, Image
+from moldmates.compare import BestFit
 from moldmates.utils import consume
 import matplotlib.pyplot as plt
 from matplotlib import cm
@@ -21,5 +22,6 @@ def plot_image(image: Image, ax: Axes, color=None):
 
 
 def plot_images(images: List[Image], ax: Axes):
+    images = BestFit().fit_transform(images)
     _plot_image = partial(plot_image, ax=ax)
     consume(map(_plot_image, images))

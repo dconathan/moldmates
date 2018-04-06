@@ -8,6 +8,25 @@ from scipy.linalg import orthogonal_procrustes
 from sklearn.preprocessing import StandardScaler
 
 
+class BestFit:
+    def __init__(self):
+        pass
+
+    def fit(self, image: Image):
+        self.image = image
+        self.mean = image.chainlines.rtheta.mean(0)
+        return self
+
+    def transform(self, images):
+        n_chainlines = max([i.n_chainlines for i in images])
+        return images
+
+    def fit_transform(self, images):
+        self.fit(images[0])
+        return self.transform(images)
+
+
+# TODO make into a Reflector class
 class Transformer:
     def __init__(self, reflect_r=False, reflect_theta=False):
         self.R = np.eye(2)

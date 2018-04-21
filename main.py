@@ -1,22 +1,29 @@
 from moldmates.constants import LINES, ZIP
-from moldmates.load import load_image, load_zip
-from moldmates.plot import plot_images
-from moldmates.compare import compare_images, score_candidate
-from moldmates.utils import ab2rtheta
-from moldmates.objects import ChainlineGroup
+from moldmates.load import load_image, load_zip, load_dir
+from moldmates.objects import Image
 import matplotlib.pyplot as plt
-import pathlib
-import numpy as np
+from moldmates.transform import Aligner
+from moldmates.utils import xy2ab, xy2rtheta
 
-line_files = pathlib.Path(LINES).iterdir()
 
-images = list(map(load_image, line_files))
-c1 = ChainlineGroup(images[0].chainlines[:4])
-c2 = ChainlineGroup(images[1].chainlines[:4])
+aligner = Aligner()
 
-score_candidate(c1, c2)
+images = load_dir(LINES)
 
-plt.figure()
 ax = plt.gca()
-plot_images(images[:3], ax)
+
+image1: Image = images[0]
+image2: Image = images[1]
+
+image1.plot(ax, label='1')
+Aligner().fit(image1).transform(image1).plot(ax, label='t1')
+Aligner().fit(image1).transform(image2).plot(ax, label='t2')
+
+plt.xlim([-1, 1])
+plt.ylim([-1, 1])
+
+plt.legend()
+
 plt.show()
+
+

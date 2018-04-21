@@ -1,7 +1,8 @@
 import re
 import os
-from moldmates.objects import Image, Chainline, ChainlineGroup
+from moldmates.objects import Image, Chainline, ChainlineGroup, ImageSet
 import zipfile
+import pathlib
 
 
 def load_zip(filename):
@@ -12,12 +13,16 @@ def load_zip(filename):
         raise NotImplementedError
 
 
+def load_dir(dirname) -> ImageSet:
+    files = pathlib.Path(dirname).iterdir()
+    images = list(map(load_image, files))
+    return ImageSet(images)
 
-def load_image(filename):
+
+def load_image(filename, flipxy=True):
     with open(filename) as f:
         chainlines = ChainlineGroup(list(map(parse_line, f)))
-    return Image(filename=os.path.split(filename)[-1], chainlines=chainlines).process()
-
+    return Image(filename=os.path.split(filename)[-1], chainlines=chainlines, flipxy=flipxy)
 
 
 def parse_line(line):

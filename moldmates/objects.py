@@ -169,20 +169,18 @@ class ImageSet(Iterable[Image]):
 
         centered_images = []
 
-        xs = []
-        ys = []
-        
+        pixels = []
+
         for image in images:
             centered_image = image.center()
             centered_images.append(centered_image)
             for chainline in centered_image.chainlines:
-                xs += chainline.xs
-                ys += chainline.ys
+                pixels += chainline.xs
+                pixels += chainline.ys
 
-        x_scale = max(xs) - min(xs)
-        y_scale = max(ys) - min(ys)
+        scale = max(pixels) - min(pixels)
 
-        self.images = [image.scale(x_scale, y_scale) for image in centered_images]
+        self.images = [image.scale(scale, scale) for image in centered_images]
 
     def __iter__(self):
         return iter(self.images)

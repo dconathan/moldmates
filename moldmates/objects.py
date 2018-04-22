@@ -1,7 +1,7 @@
 import numpy as np
 from typing import List, Iterable, Optional
 import json
-from moldmates.utils import xy2rtheta, rtheta2xy, xy2ab
+from moldmates.utils import xy2rtheta, rtheta2xy, xy2ab, rotation_matrix
 from moldmates.plot import COLORS
 from matplotlib.axes import Axes
 
@@ -23,6 +23,11 @@ class Chainline:
     def trans_rtheta(self, r: float, theta: float) -> 'Chainline':
         theta = (self.theta + theta) % np.pi
         return Chainline(r=self.r + r, theta=theta)
+
+    def reflect_rtheta(self, r: bool=False, t: bool=False) -> 'Chainline':
+        r = -1 if r else 1
+        t = -1 if t else 1
+        return Chainline(r=self.r*r, theta=self.theta*t)
 
     def dump(self):
         return {'xs': self.xs, 'ys': self.ys}
@@ -54,67 +59,75 @@ class Chainline:
     def rtheta(self):
         return np.array([self.r, self.theta])
 
-    def flip_xy(self) -> 'Chainline':
-        x = self.to_array()
-        rot_angle = -np.pi/4
-        rot_sin = np.sin(rot_angle)
-        rot_cos = np.cos(rot_angle)
-        rot = np.array([[rot_cos, -rot_sin], [rot_sin, rot_cos]])
-        x = np.dot(x, rot)
-        return Chainline.from_array(x)
-
     def plot(self, ax: Axes, color=None, **kwargs):
         a, b = xy2ab(self.xs, self.ys)
         xs = np.linspace(-1, 1)
         ys = list(map(lambda x: a*x + b, xs))
-        ax.plot(xs, ys, color=color or next(COLORS), **kwargs)
+        xy = np.array(list(zip(xs, ys)))
+        xy = np.dot(xy, rotation_matrix(np.pi/4))
+        ax.plot(xy[:, 0], xy[:, 1], color=color or next(COLORS), **kwargs)
 
 
-class ChainlineGroup(list):
-    @property
-    def rtheta(self):
-        return np.array([c.rtheta for c in self])
-
-    def flipxy(self) -> 'ChainlineGroup':
-        return ChainlineGroup((chainline.flip_xy() for chainline in self))
-
-    def plot(self, ax: Axes, color=None, **kwargs):
-        for chainline in self:
-            chainline.plot(ax, color or next(COLORS), **kwargs)
-
-    def trans_rtheta(self, r: float, theta: float) ->'ChainlineGroup':
-        return ChainlineGroup((chainline.trans_rtheta(r, theta) for chainline in self))
-
-
-i = 0
-
-
-class Image:
-    def __init__(self, chainlines: ChainlineGroup, filename: str, index: Optional[int]=None, flipxy: bool=False):
-        self.chainlines = chainlines.flipxy() if flipxy else chainlines
-        self.filename = filename
-        self.index = self.new_index() if index is None else index
-
-    def plot(self, ax: Axes, color=None, **kwargs):
-        self.chainlines.plot(ax, color or next(COLORS), **kwargs)
-
-    def trans_rtheta(self, r: float, theta: float) -> 'Image':
-        chainlines = self.chainlines.trans_rtheta(r, theta)
-        return Image(chainlines, self.filename, self.index)
-
-    @property
-    def rtheta(self):
-        return self.chainlines.rtheta
-
-    @staticmethod
-    def new_index():
-        global i
-        i += 1
-        return i - 1
+class ChainlineSet(Iterable[Chainline]):
+    def __init__(self, chainlines: Iterable[Chainline]):
+        self.chainlines = list(chainlines)
 
     @property
     def n_chainlines(self):
         return len(self.chainlines)
+
+    @property
+    def rtheta(self):
+        return np.array([c.rtheta for c in self.chainlines])
+
+    def plot(self, ax: Axes, color=None, **kwargs):
+        color = color or next(COLORS)
+        for chainline in self.chainlines:
+            chainline.plot(ax, color, **kwargs)
+
+    def trans_rtheta(self, r: float, theta: float) -> 'ChainlineSet':
+        return ChainlineSet((chainline.trans_rtheta(r, theta) for chainline in self.chainlines))
+
+    def reflect_rtheta(self, r: bool=False, t: bool=False) -> 'ChainlineSet':
+        return ChainlineSet((chainline.reflect_rtheta(r, t) for chainline in self.chainlines))
+
+    def __iter__(self):
+        return iter(self.chainlines)
+
+    def __len__(self):
+        return len(self.chainlines)
+
+    def subsets(self, length: int) -> Iterable['ChainlineSet']:
+        if length > self.n_chainlines:
+            raise ValueError
+        subsets = []
+        for i in range(self.n_chainlines - length + 1):
+            subsets.append(ChainlineSet(self.chainlines[i:i+length]))
+        return subsets
+
+
+global_index = 0
+
+
+class Image(ChainlineSet):
+    def __init__(self, chainlines: Iterable[Chainline], filename: str, index: Optional[int]=None):
+        super().__init__(chainlines)
+        self.filename = filename
+        self.index = self.new_index() if index is None else index
+
+    def trans_rtheta(self, r: float, theta: float) -> 'Image':
+        chainlines = ChainlineSet(self.chainlines).trans_rtheta(r, theta)
+        return Image(chainlines, self.filename, self.index)
+
+    def reflect_rtheta(self, r: bool=False, t: bool=False) -> 'Image':
+        chainlines = ChainlineSet(self.chainlines).reflect_rtheta(r, t)
+        return Image(chainlines, self.filename, self.index)
+
+    @staticmethod
+    def new_index():
+        global global_index
+        global_index += 1
+        return global_index - 1
 
     def center(self) -> 'Image':
         xs = []
@@ -124,7 +137,7 @@ class Image:
             ys += chainline.ys
         x_mean = np.mean(xs)
         y_mean = np.mean(ys)
-        centered_chainlines = ChainlineGroup()
+        centered_chainlines = list()
         for chainline in self.chainlines:
             xy = chainline.to_array()
             new_x = xy[:, 0] - x_mean
@@ -134,7 +147,7 @@ class Image:
         return Image(centered_chainlines, self.filename, self.index)
     
     def scale(self, x: float, y: float) -> 'Image':
-        scaled_chainlines = ChainlineGroup()
+        scaled_chainlines = list()
         for chainline in self.chainlines:
             xy = chainline.to_array()
             new_x = xy[:, 0]/x
@@ -144,7 +157,7 @@ class Image:
         return Image(scaled_chainlines, self.filename, self.index)
  
 
-class ImageSet(list):
+class ImageSet(Iterable[Image]):
     """
     Creates a set of images.
 
@@ -169,4 +182,7 @@ class ImageSet(list):
         x_scale = max(xs) - min(xs)
         y_scale = max(ys) - min(ys)
 
-        super().__init__((image.scale(x_scale, y_scale) for image in centered_images))
+        self.images = [image.scale(x_scale, y_scale) for image in centered_images]
+
+    def __iter__(self):
+        return iter(self.images)

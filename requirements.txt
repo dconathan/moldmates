@@ -1,7 +1,6 @@
-scipy
-numpy
-scikit-learn
-matplotlib
-dataclasses
-pytest
-
+scipy==1.0.1
+numpy==1.14.2
+scikit-learn==0.19.1
+matplotlib==2.2.2
+pytest==3.5.0
+jupyter==1.0.0

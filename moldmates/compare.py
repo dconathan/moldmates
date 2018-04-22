@@ -1,5 +1,5 @@
 from typing import List
-from moldmates.objects import Chainline, Image, ChainlineGroup
+from moldmates.objects import Chainline, Image, ChainlineSet
 from moldmates.utils import subseqs, rtheta2xy
 from itertools import product
 import numpy as np
@@ -56,13 +56,13 @@ def get_reflections(image: Image):
 
 
 def score_pair(i1: Image, i2: Image, n_chainlines=3):
-    i1_candidates = map(ChainlineGroup, subseqs(i1.chainlines, n_chainlines))
-    i2_candidates = map(ChainlineGroup, subseqs(i2.chainlines, n_chainlines))
+    i1_candidates = map(ChainlineSet, subseqs(i1.chainlines, n_chainlines))
+    i2_candidates = map(ChainlineSet, subseqs(i2.chainlines, n_chainlines))
     candidates = product(i1_candidates, i2_candidates)
     scores = map(score_candidate, candidates)
     print(min(scores))
 
 
-def score_candidate(c: List[ChainlineGroup]):
+def score_candidate(c: List[ChainlineSet]):
     return np.linalg.norm(c[0].rtheta_n - c[1].rtheta_n)
 

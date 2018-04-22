@@ -6,11 +6,6 @@ def consume(seq):
     deque(seq, maxlen=0)
 
 
-def subseqs(seq, length):
-    for i in range(len(seq) - length + 1):
-        yield seq[i:i+length]
-
-
 def xy2rtheta(xs, ys):
     return ab2rtheta(*xy2ab(xs, ys))
 
@@ -44,3 +39,12 @@ def rtheta2xy(r, theta):
     x = r / np.cos(theta)
     y = r / np.cos(np.pi/2 - theta)
     return [x, 0], [0, y]
+
+
+def rotation_matrix(theta: float) -> np.ndarray:
+    """
+    returns the rotation matrix according to theta radians
+    """
+    rot_sin = np.sin(theta)
+    rot_cos = np.cos(theta)
+    return np.array([[rot_cos, -rot_sin], [rot_sin, rot_cos]])

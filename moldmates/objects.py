@@ -181,6 +181,14 @@ class ImageSet(Iterable[Image]):
         scale = max(pixels) - min(pixels)
 
         self.images = [image.scale(scale, scale) for image in centered_images]
+        self.filename_dict = {image.filename: image for image in self.images}
 
     def __iter__(self):
         return iter(self.images)
+
+    def __getitem__(self, item):
+        if isinstance(item, int):
+            return self.images[item]
+        elif isinstance(item, str):
+            return self.filename_dict[item]
+
